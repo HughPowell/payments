@@ -1,8 +1,11 @@
 package uk.co.hughpowell.payments.controller;
 
 import java.net.URI;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.hateoas.Link;
+import org.springframework.hateoas.Resources;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,8 +34,18 @@ public class PaymentsRestController {
 		return ResponseEntity.created(uriToPayment).build();
 	}
 	
+	@RequestMapping(method = RequestMethod.GET)
+	Resources<PaymentResource> readPayments() {
+		List<PaymentResource> paymentResources = repository
+				.readPayments()
+				.stream()
+				.map(PaymentResource::new)
+				.collect(Collectors.toList());
+		return new Resources<>(paymentResources);
+	}
+
 	@RequestMapping(method = RequestMethod.GET, value = "/{paymentId}")
-	PaymentResource getPayment(@PathVariable String paymentId) {
+	PaymentResource readPayment(@PathVariable String paymentId) {
 		JsonNode payment = repository.read(paymentId);
 		return new PaymentResource(payment);
 	}

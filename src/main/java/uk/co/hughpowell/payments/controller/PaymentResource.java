@@ -13,7 +13,7 @@ public class PaymentResource extends ResourceSupport {
 		this.payment = payment;
 		this.add(linkTo(PaymentsRestController.class).withRel("payments"));
 		this.add(linkTo(methodOn(PaymentsRestController.class)
-				.getPayment(payment.get("id").asText())).withSelfRel());
+				.readPayment(payment.get("id").asText())).withSelfRel());
 	}
 	
 	public JsonNode getPayment() {

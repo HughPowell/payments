@@ -21,3 +21,7 @@ Feature: Payments
 		Given that Alice has made a payment to Bob
 		When she deletes it
 		Then she should no longer be able to fetch it
+
+	Scenario: Alice fetches a collection of payments
+		When Alice makes 3 payments
+		Then she should be able to fetch a list of the 3 of them

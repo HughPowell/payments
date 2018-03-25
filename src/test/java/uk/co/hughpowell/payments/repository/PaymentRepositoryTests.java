@@ -2,7 +2,10 @@ package uk.co.hughpowell.payments.repository;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.Collection;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -87,5 +90,26 @@ public class PaymentRepositoryTests {
 		repository.delete(paymentId);
 		
 		repository.read(paymentId);
+	}
+	
+	@Test
+	public void shouldReturnAnEmptyCollectionWhenThereAreNoPayments() {
+		Collection<JsonNode> payments = repository.readPayments();
+		assert(payments.isEmpty());
+	}
+	
+	@Test
+	public void shouldReturnAListOfAllPayments() {
+		repository.create(Payment.create("Alice", "Bob", 100));
+		repository.create(Payment.create("Alice", "Bob", 200));
+		repository.create(Payment.create("Alice", "Bob", 300));
+		
+		Collection<JsonNode> payments = repository.readPayments();
+		
+		Set<String> ids = payments
+				.stream()
+				.map(p -> p.get("id").asText())
+				.collect(Collectors.toSet());
+		assertEquals(ids.size(), 3);
 	}
 }

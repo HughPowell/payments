@@ -16,6 +16,7 @@ import java.nio.charset.Charset;
 import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -46,8 +47,9 @@ public class PaymentSteps extends StepsAbstractClass implements En {
 	public void setup() {
 		mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
 		result = null;
+		paymentsRepository.empty();
 	}
-
+	
 	public PaymentSteps() {
 		
 		Given("^that ([A-Z][a-z]*) has made a payment to ([A-Z][a-z]*) for (\\d+) pounds$",
@@ -116,6 +118,17 @@ public class PaymentSteps extends StepsAbstractClass implements En {
 					.andReturn();
 		});
 		
+		When("^([A-Z][a-z]*) makes (\\d+) payments$",
+				(String personFrom, Integer numberOfPayments) -> {
+					for (int index = 0; index < numberOfPayments; ++index) {
+						JsonNode payment = Payment.create(personFrom, "OtherPerson" + index); 
+						mockMvc.perform(post("/payments")
+								.content(payment.toString())
+								.contentType(contentType))
+								.andExpect(status().isCreated());
+					}
+				});
+		
 		Then("^they are able to fetch that payment$", () -> {
 			String paymentLocation = result.getResponse().getHeader("Location");
 			mockMvc.perform(get(new URI(paymentLocation))
@@ -148,6 +161,15 @@ public class PaymentSteps extends StepsAbstractClass implements En {
 		
 		Then("she gets an error indicating there is a conflict", () -> {
 			assert(result.getResponse().getStatus() == HttpStatus.CONFLICT.value());
+		});
+		
+		Then("^she should be able to fetch a list of the (\\d+) of them",
+				(Integer numberOfPayments) -> {
+			MvcResult result = mockMvc.perform(get("/payments")
+					.contentType(contentType))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.content", hasSize(3)))
+					.andReturn();
 		});
 	}
 }

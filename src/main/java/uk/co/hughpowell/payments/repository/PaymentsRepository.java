@@ -1,5 +1,6 @@
 package uk.co.hughpowell.payments.repository;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,5 +37,14 @@ public class PaymentsRepository {
 	
 	public void delete(String indexId) {
 		repository.remove(indexId);
+	}
+	
+	public Collection<JsonNode> readPayments() {
+		return repository.values();
+	}
+	
+	// TODO: Work out how to get Cucumber to recycle the repository
+	public void empty() {
+		repository.clear();
 	}
 }
