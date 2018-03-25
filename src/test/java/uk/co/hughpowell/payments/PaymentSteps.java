@@ -105,6 +105,17 @@ public class PaymentSteps extends StepsAbstractClass implements En {
 					.andExpect(status().isNoContent());
 		});
 		
+		When("^([A-Z][a-z]*) updates a non-existant payment$",
+				(String personFrom) -> {
+			JsonNode payment = Payment.create("Alice", "Bob");
+			String paymentId = UUID.randomUUID().toString();
+			String path = String.format("/payments/%s", paymentId);
+			result = mockMvc.perform(put(path)
+					.content(payment.toString())
+					.contentType(contentType))
+					.andReturn();
+		});
+		
 		Then("^they are able to fetch that payment$", () -> {
 			String paymentLocation = result.getResponse().getHeader("Location");
 			mockMvc.perform(get(new URI(paymentLocation))
@@ -133,6 +144,10 @@ public class PaymentSteps extends StepsAbstractClass implements En {
 			mockMvc.perform(get(new URI(paymentLocation))
 					.contentType(contentType))
 					.andExpect(status().isNotFound());
+		});
+		
+		Then("she gets an error indicating there is a conflict", () -> {
+			assert(result.getResponse().getStatus() == HttpStatus.CONFLICT.value());
 		});
 	}
 }

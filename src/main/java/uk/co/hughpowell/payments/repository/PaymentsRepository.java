@@ -15,22 +15,26 @@ public class PaymentsRepository {
 		repository.put(payment.get("id").asText(), payment);
 	}
 	
-	public JsonNode read(String paymentId) {
-		JsonNode result = repository.get(paymentId);
+	public JsonNode read(String indexId) {
+		JsonNode result = repository.get(indexId);
 		if (result == null) {
-			throw new PaymentNotFound(paymentId);
+			throw new PaymentNotFound(indexId);
 		}
 		return result;
 	}
 	
-	public void replace(String paymentId, JsonNode payment) {
+	public void replace(String indexId, JsonNode payment) {
 		if (payment == null) {
-			throw new NullPointerException();
+			throw new NullPointerException("payment is null");
 		}
-		repository.put(paymentId, payment);
+		String idOfPayment = payment.get("id").asText();
+		if (!indexId.equals(idOfPayment)) {
+			throw new MismatchedIds(indexId, idOfPayment);
+		}
+		repository.put(indexId, payment);
 	}
 	
-	public void delete(String paymentId) {
-		repository.remove(paymentId);
+	public void delete(String indexId) {
+		repository.remove(indexId);
 	}
 }

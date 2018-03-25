@@ -70,6 +70,14 @@ public class PaymentRepositoryTests {
 		repository.replace(paymentId, null);
 	}
 	
+	@Test(expected = MismatchedIds.class)
+	public void shouldThrowExceptionWhenGivenPaymentIdAndIdOfPaymentAreMismatched() {
+		JsonNode payment = Payment.create("Alice", "Bob");
+		String differentPaymentId = UUID.randomUUID().toString();
+		
+		repository.replace(differentPaymentId, payment);
+	}
+	
 	@Test(expected = PaymentNotFound.class)
 	public void shouldDeleteThePaymentAssociatedWithTheGivenId() {
 		JsonNode payment = Payment.create("Alice", "Bob");
