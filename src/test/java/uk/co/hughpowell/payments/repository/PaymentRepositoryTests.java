@@ -53,8 +53,9 @@ public class PaymentRepositoryTests {
 		JsonNode payment = Payment.create("Alice", "Bob", 100);
 		repository.create(payment);
 		
+		String paymentId = payment.get("id").asText();
 		JsonNode updatedPayment = Payment.updateAmount(payment, 200);
-		repository.replace(updatedPayment);
+		repository.replace(paymentId, updatedPayment);
 		
 		JsonNode retrievedPayment = repository.read(updatedPayment.get("id").asText());
 		assertEquals(updatedPayment, retrievedPayment);
@@ -62,9 +63,11 @@ public class PaymentRepositoryTests {
 	
 	@Test(expected = NullPointerException.class)
 	public void shouldThrowExceptionWhenReplacingWithANullPayment() {
-		repository.create(Payment.create("Alice", "Bob"));
+		JsonNode payment = Payment.create("Alice", "Bob");
+		repository.create(payment);
 		
-		repository.replace(null);
+		String paymentId = payment.get("id").asText();
+		repository.replace(paymentId, null);
 	}
 	
 	@Test(expected = PaymentNotFound.class)

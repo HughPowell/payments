@@ -23,8 +23,11 @@ public class PaymentsRepository {
 		return result;
 	}
 	
-	public void replace(JsonNode payment) {
-		repository.put(payment.get("id").asText(), payment);
+	public void replace(String paymentId, JsonNode payment) {
+		if (payment == null) {
+			throw new NullPointerException();
+		}
+		repository.put(paymentId, payment);
 	}
 	
 	public void delete(String paymentId) {

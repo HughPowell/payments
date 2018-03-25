@@ -38,8 +38,10 @@ public class PaymentsRestController {
 	}
 	
 	@RequestMapping(method = RequestMethod.PUT, value = "/{paymentId}")
-	ResponseEntity<?> replacePayment(@RequestBody JsonNode payment) {
-		repository.replace(payment);
+	ResponseEntity<?> replacePayment(
+			@PathVariable String paymentId,
+			@RequestBody JsonNode payment) {
+		repository.replace(paymentId, payment);
 		return ResponseEntity.noContent().build();
 	}
 	
