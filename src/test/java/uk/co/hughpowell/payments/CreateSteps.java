@@ -1,13 +1,16 @@
 package uk.co.hughpowell.payments;
 
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 
+import java.net.URI;
 import java.nio.charset.Charset;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -23,20 +26,27 @@ public class CreateSteps extends StepsAbstractClass implements En {
 
     private MockMvc mockMvc;
 
+    private MvcResult result;
+
     @cucumber.api.java.Before
     public void setup() {
 		mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+		result = null;
     }
 
 	public CreateSteps() {
 		When("^Alice makes a payment to Bob$", () -> {
-			mockMvc.perform(post("/payments")
+			result = mockMvc.perform(post("/payments")
 					.content("{\"id\" : \"abc\"}")
 					.contentType(contentType))
-					.andExpect(status().isCreated());
+					.andExpect(status().isCreated())
+					.andReturn();
 		});
 		Then("^Alice is able to view that payment$", () -> {
-			assert(true);
+			String paymentLocation = result.getResponse().getHeader("Location");
+			mockMvc.perform(get(new URI(paymentLocation))
+					.contentType(contentType))
+			        .andExpect(status().isOk());
 		});
 	}
 }
