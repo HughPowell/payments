@@ -41,6 +41,11 @@ public class PaymentRepositoryTests {
 		assertEquals(payment, retrievedPayment);
 	}
 	
+	@Test(expected = NullPointerException.class)
+	public void shouldThrowExceptionWhenCreatingANullPayment() {
+		repository.create(null);
+	}
+	
 	@Test(expected = PaymentNotFound.class)
 	public void shouldThrowExceptionWhenGettingNonExistantPayment() {
 		repository.read(UUID.randomUUID().toString());
@@ -56,5 +61,12 @@ public class PaymentRepositoryTests {
 		
 		JsonNode retrievedPayment = repository.read(updatedPayment.get("id").asText());
 		assertEquals(updatedPayment, retrievedPayment);
+	}
+	
+	@Test(expected = NullPointerException.class)
+	public void shouldThrowExceptionWhenReplacingWithANullPayment() {
+		repository.create(Payment.create("Alice", "Bob"));
+		
+		repository.replace(null);
 	}
 }
