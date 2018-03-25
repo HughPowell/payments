@@ -13,7 +13,7 @@ import org.junit.runner.RunWith;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import uk.co.hughpowell.payments.Payment;
+import uk.co.hughpowell.payments.PaymentUtils;
 import uk.co.hughpowell.payments.PaymentsApplication;
 import uk.co.hughpowell.payments.repository.PaymentNotFound;
 import uk.co.hughpowell.payments.repository.PaymentsRepository;
@@ -32,18 +32,28 @@ public class PaymentRepositoryTests {
 	}
 
 	@Test
-	public void shouldBeAbleToGetAPaymentWhenOneIsCreated() {
-		JsonNode payment = Payment.create("Alice", "Bob");
+	public void shouldBeAbleToGetAPaymentWhenOneIsCreated()
+			throws InterruptedException {
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		repository.create(payment);
 		
-		JsonNode retrievedPayment = repository.read(payment.get("id").asText());
+		Payment retrievedPayment = repository.read(payment.getIndex());
 		
 		assertEquals(payment, retrievedPayment);
 	}
 	
 	@Test(expected = NullPointerException.class)
-	public void shouldThrowExceptionWhenCreatingANullPayment() {
+	public void shouldThrowExceptionWhenCreatingANullPayment()
+			throws InterruptedException {
 		repository.create(null);
+	}
+	
+	@Test(expected = PaymentAlreadyExists.class)
+	public void shouldThrowExceptionWhenCreatingAPaymentThatAlreadyExists()
+			throws InterruptedException {
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
+		repository.create(payment);
+		repository.create(payment);
 	}
 	
 	@Test(expected = PaymentNotFound.class)
@@ -52,63 +62,83 @@ public class PaymentRepositoryTests {
 	}
 	
 	@Test
-	public void shouldReplaceTheExistingPaymentWithTheOneGiven() {
-		JsonNode payment = Payment.create("Alice", "Bob", 100);
+	public void shouldReplaceTheExistingPaymentWithTheOneGiven()
+			throws InterruptedException {
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob", 100));
 		repository.create(payment);
 		
-		String paymentId = payment.get("id").asText();
-		JsonNode updatedPayment = Payment.updateAmount(payment, 200);
-		repository.replace(paymentId, updatedPayment);
+		JsonNode updatedPayment = PaymentUtils.updateAmount(payment.getData(), 200);
+		repository.replace(payment.getIndex(),
+				payment.getDigest(),
+				new Payment(updatedPayment));
 		
-		JsonNode retrievedPayment = repository.read(updatedPayment.get("id").asText());
-		assertEquals(updatedPayment, retrievedPayment);
+		Payment retrievedPayment = repository.read(payment.getIndex());
+		assertEquals(updatedPayment, retrievedPayment.getData());
 	}
 	
 	@Test(expected = NullPointerException.class)
-	public void shouldThrowExceptionWhenReplacingWithANullPayment() {
-		JsonNode payment = Payment.create("Alice", "Bob");
+	public void shouldThrowExceptionWhenReplacingWithANullPayment()
+			throws InterruptedException {
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		repository.create(payment);
 		
-		String paymentId = payment.get("id").asText();
-		repository.replace(paymentId, null);
+		repository.replace(payment.getIndex(), payment.getDigest(), null);
+	}
+	
+	@Test(expected = NullDigest.class)
+	public void shouldThrowExceptionWhenNoDigestIsProvided()
+			throws InterruptedException {
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
+		repository.replace(payment.getIndex(), null, payment);
 	}
 	
 	@Test(expected = MismatchedIds.class)
-	public void shouldThrowExceptionWhenGivenPaymentIdAndIdOfPaymentAreMismatched() {
-		JsonNode payment = Payment.create("Alice", "Bob");
+	public void shouldThrowExceptionWhenGivenPaymentIdAndIdOfPaymentAreMismatched()
+			throws InterruptedException {
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		String differentPaymentId = UUID.randomUUID().toString();
 		
-		repository.replace(differentPaymentId, payment);
+		repository.replace(differentPaymentId, payment.getDigest(), payment);
+	}
+	
+	@Test(expected = MismatchedDigests.class)
+	public void shouldThrowExceptionWhenGivenDigestDoesNotMatchDigestOfCurrentPayment()
+			throws InterruptedException {
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
+		repository.create(payment);
+		Payment updatedPayment = 
+				new Payment(PaymentUtils.updateAmount(payment.getData(), 200));
+		repository.replace(updatedPayment.getIndex(), "SomeOtherDigest", updatedPayment);
 	}
 	
 	@Test(expected = PaymentNotFound.class)
-	public void shouldDeleteThePaymentAssociatedWithTheGivenId() {
-		JsonNode payment = Payment.create("Alice", "Bob");
-		String paymentId = payment.get("id").asText();
+	public void shouldDeleteThePaymentAssociatedWithTheGivenId()
+			throws InterruptedException {
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		repository.create(payment);
 		
-		repository.delete(paymentId);
+		repository.delete(payment.getIndex());
 		
-		repository.read(paymentId);
+		repository.read(payment.getIndex());
 	}
 	
 	@Test
 	public void shouldReturnAnEmptyCollectionWhenThereAreNoPayments() {
-		Collection<JsonNode> payments = repository.readPayments();
+		Collection<Payment> payments = repository.readPayments();
 		assert(payments.isEmpty());
 	}
 	
 	@Test
-	public void shouldReturnAListOfAllPayments() {
-		repository.create(Payment.create("Alice", "Bob", 100));
-		repository.create(Payment.create("Alice", "Bob", 200));
-		repository.create(Payment.create("Alice", "Bob", 300));
+	public void shouldReturnAListOfAllPayments() throws InterruptedException {
+		repository.create(new Payment(PaymentUtils.create("Alice", "Bob", 100)));
+		repository.create(new Payment(PaymentUtils.create("Alice", "Bob", 200)));
+		repository.create(new Payment(PaymentUtils.create("Alice", "Bob", 300)));
 		
-		Collection<JsonNode> payments = repository.readPayments();
+		Collection<Payment> payments = repository.readPayments();
 		
 		Set<String> ids = payments
 				.stream()
-				.map(p -> p.get("id").asText())
+				.map(p -> p.getIndex())
 				.collect(Collectors.toSet());
 		assertEquals(ids.size(), 3);
 	}

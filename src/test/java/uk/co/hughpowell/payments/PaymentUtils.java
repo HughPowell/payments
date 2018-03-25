@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-public class Payment {
+public class PaymentUtils {
 
 	final static JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 	

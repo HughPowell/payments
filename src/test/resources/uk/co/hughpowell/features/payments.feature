@@ -25,3 +25,8 @@ Feature: Payments
 	Scenario: Alice fetches a collection of payments
 		When Alice makes 3 payments
 		Then she should be able to fetch a list of the 3 of them
+
+	Scenario: Alice and Bob make simultaneous updates
+		Given that Alice has made a payment to Bob
+		When Alice and Bob both update it
+		Then the conflict is detected
