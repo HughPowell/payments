@@ -1,5 +1,5 @@
-Feature: Create Payment
+Feature: Payments
 
 	Scenario: Alice makes a payment to Bob
 		When Alice makes a payment to Bob
-		Then Alice is able to view that payment
+		Then They are able to view that payment

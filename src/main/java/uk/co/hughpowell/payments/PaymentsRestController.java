@@ -18,10 +18,15 @@ import com.fasterxml.jackson.databind.node.TextNode;
 @RequestMapping("/payments")
 public class PaymentsRestController {
 	
-	private final JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+	private final PaymentsRepository repository;
+	
+	PaymentsRestController(PaymentsRepository paymentsRepository) {
+		this.repository = paymentsRepository;
+	}
 
 	@RequestMapping(method = RequestMethod.POST)
 	ResponseEntity<?> createPayment(@RequestBody JsonNode payment) {
+		repository.create(payment);
 		Link linkToPayment = new PaymentResource(payment).getLink("self");
 		URI uriToPayment = URI.create(linkToPayment.getHref());
 		return ResponseEntity.created(uriToPayment).build();
@@ -29,7 +34,7 @@ public class PaymentsRestController {
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/{paymentId}")
 	PaymentResource getPayment(@PathVariable String paymentId) {
-		TextNode jsonPaymentId = jsonFactory.textNode(paymentId);
-		return new PaymentResource(jsonFactory.objectNode().set("id", jsonPaymentId));
+		JsonNode payment = repository.read(paymentId);
+		return new PaymentResource(payment);
 	}
 }
