@@ -15,6 +15,10 @@ public class PaymentsRepository {
 	}
 	
 	public JsonNode read(String paymentId) {
-		return repository.get(paymentId);
+		JsonNode result = repository.get(paymentId);
+		if (result == null) {
+			throw new PaymentNotFound(paymentId);
+		}
+		return result;
 	}
 }
