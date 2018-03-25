@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 @Component
 public class PaymentsRepository {
 	private final Map<String, JsonNode> repository = new HashMap<String, JsonNode>();
+
 	public void create(JsonNode payment) {
 		repository.put(payment.get("id").asText(), payment);
 	}
@@ -20,5 +21,9 @@ public class PaymentsRepository {
 			throw new PaymentNotFound(paymentId);
 		}
 		return result;
+	}
+	
+	public void replace(JsonNode payment) {
+		repository.put(payment.get("id").asText(), payment);
 	}
 }

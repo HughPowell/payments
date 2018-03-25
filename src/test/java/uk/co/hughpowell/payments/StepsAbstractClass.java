@@ -8,6 +8,4 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = PaymentsApplication.class)
 @WebAppConfiguration
-public abstract class StepsAbstractClass {
-
-}
+public abstract class StepsAbstractClass {}

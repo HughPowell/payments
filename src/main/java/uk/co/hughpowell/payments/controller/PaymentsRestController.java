@@ -39,4 +39,10 @@ public class PaymentsRestController {
 		JsonNode payment = repository.read(paymentId);
 		return new PaymentResource(payment);
 	}
+	
+	@RequestMapping(method = RequestMethod.PUT, value = "/{paymentId}")
+	ResponseEntity<?> replacePayment(@RequestBody JsonNode payment) {
+		repository.replace(payment);
+		return ResponseEntity.noContent().build();
+	}
 }

@@ -13,6 +13,7 @@ import org.junit.runner.RunWith;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
+import uk.co.hughpowell.payments.Payment;
 import uk.co.hughpowell.payments.PaymentsApplication;
 import uk.co.hughpowell.payments.repository.PaymentNotFound;
 import uk.co.hughpowell.payments.repository.PaymentsRepository;
@@ -23,17 +24,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = PaymentsApplication.class)
 public class PaymentRepositoryTests {
-	final JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-	
-	private JsonNode createPayment(String from, String to) {
-		Map<String, JsonNode> paymentProperties = new HashMap<String, JsonNode>();
-		JsonNode jsonUUID = jsonFactory.textNode(UUID.randomUUID().toString());
-		paymentProperties.put("id", jsonUUID);
-		paymentProperties.put("from", jsonFactory.textNode(from));
-		paymentProperties.put("to", jsonFactory.textNode(to));
-		return jsonFactory.objectNode().setAll(paymentProperties);
-	}
-	
 	private PaymentsRepository repository;
 	
 	@Before
@@ -43,7 +33,7 @@ public class PaymentRepositoryTests {
 
 	@Test
 	public void shouldGetAPaymentWhenOneIsCreated() {
-		JsonNode payment = createPayment("Alice", "Bob");
+		JsonNode payment = Payment.create("Alice", "Bob");
 		repository.create(payment);
 		
 		JsonNode retrievedPayment = repository.read(payment.get("id").asText());
@@ -54,5 +44,17 @@ public class PaymentRepositoryTests {
 	@Test(expected = PaymentNotFound.class)
 	public void shouldThrowExceptionWhenGettingNonExistantPayment() {
 		repository.read(UUID.randomUUID().toString());
+	}
+	
+	@Test
+	public void shouldReplaceTheExistingPaymentWithTheOneGiven() {
+		JsonNode payment = Payment.create("Alice", "Bob", 100);
+		repository.create(payment);
+		
+		JsonNode updatedPayment = Payment.updateAmount(payment, 200);
+		repository.replace(updatedPayment);
+		
+		JsonNode retrievedPayment = repository.read(updatedPayment.get("id").asText());
+		assertEquals(updatedPayment, retrievedPayment);
 	}
 }

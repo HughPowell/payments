@@ -6,8 +6,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,13 +13,12 @@ import org.springframework.http.MediaType;
 
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -44,19 +41,6 @@ public class PaymentSteps extends StepsAbstractClass implements En {
 	
 	private JsonNode payment;
 
-	final JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-	
-	final ObjectMapper mapper = new ObjectMapper();
-	
-	private JsonNode createPayment(String from, String to) {
-		Map<String, JsonNode> paymentProperties = new HashMap<String, JsonNode>();
-		JsonNode jsonUUID = jsonFactory.textNode(UUID.randomUUID().toString());
-		paymentProperties.put("id", jsonUUID);
-		paymentProperties.put("from", jsonFactory.textNode(from));
-		paymentProperties.put("to", jsonFactory.textNode(to));
-		return jsonFactory.objectNode().setAll(paymentProperties);
-	}
-	
 	@cucumber.api.java.Before
 	public void setup() {
 		mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
@@ -64,8 +48,20 @@ public class PaymentSteps extends StepsAbstractClass implements En {
 	}
 
 	public PaymentSteps() {
-		When("^([A-Z][a-z]*) makes a payment to ([A-Z][a-z]*)$", (String personFrom, String personTo) -> {
-			payment = createPayment(personFrom, personTo);
+		
+		Given("^that ([A-Z][a-z]*) has made a payment to ([A-Z][a-z]*) for (\\d+) pounds$",
+				(String personFrom, String personTo, Integer amount) -> {
+			payment = Payment.create(personFrom, personTo, amount);
+			result = mockMvc.perform(post("/payments")
+					.content(payment.toString())
+					.contentType(contentType))
+					.andExpect(status().isCreated())
+					.andReturn();
+		});
+		
+		When("^([A-Z][a-z]*) makes a payment to ([A-Z][a-z]*)$",
+				(String personFrom, String personTo) -> {
+			payment = Payment.create(personFrom, personTo);
 			result = mockMvc.perform(post("/payments")
 					.content(payment.toString())
 					.contentType(contentType))
@@ -73,14 +69,26 @@ public class PaymentSteps extends StepsAbstractClass implements En {
 					.andReturn();
 		});
 
-		When("^The payment ([A-Z][a-z]*) wishes to view does not exist", (String person) -> {
+		When("^the payment ([A-Z][a-z]*) wishes to fetch does not exist",
+				(String person) -> {
 			String paymentId = UUID.randomUUID().toString();
-			result = mockMvc.perform(get(String.format("/payments/%s", paymentId))
+			String path = String.format("/payments/%s", paymentId);
+			result = mockMvc.perform(get(path)
 					.contentType(contentType))
 					.andReturn();
 		});
 
-		Then("^They are able to view that payment$", () -> {
+		When("^she updates it to (\\d+) pounds$", (Integer amount) -> {
+			JsonNode updatedPayment = Payment.updateAmount(payment, amount);
+			String paymentLocation = result.getResponse().getHeader("Location");
+			mockMvc.perform(put(new URI(paymentLocation))
+					.content(updatedPayment.toString())
+					.contentType(contentType))
+					.andExpect(status().isNoContent())
+					.andReturn();
+		});
+		
+		Then("^they are able to fetch that payment$", () -> {
 			String paymentLocation = result.getResponse().getHeader("Location");
 			mockMvc.perform(get(new URI(paymentLocation))
 					.contentType(contentType))
@@ -90,8 +98,17 @@ public class PaymentSteps extends StepsAbstractClass implements En {
 			.andExpect(jsonPath("$.payment.to", is(payment.get("to").asText())));
 		});
 		
-		Then("^She gets an error saying the payment does not exist$", () -> {
+		Then("^she gets an error saying the payment does not exist$", () -> {
 			assert(result.getResponse().getStatus() == HttpStatus.NOT_FOUND.value());
+		});
+		
+		Then("^she should see (\\d+) pounds when she fetches the payment",
+				(Integer amount) -> {
+			String paymentLocation = result.getResponse().getHeader("Location");
+			mockMvc.perform(get(new URI(paymentLocation))
+					.contentType(contentType))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.payment.amount", is(amount)));
 		});
 	}
 }
