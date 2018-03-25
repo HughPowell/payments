@@ -1,4 +1,4 @@
-package uk.co.hughpowell.payments;
+package uk.co.hughpowell.payments.repository;
 
 import java.util.HashMap;
 import java.util.Map;

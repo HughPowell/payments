@@ -1,4 +1,4 @@
-package uk.co.hughpowell.payments;
+package uk.co.hughpowell.payments.repository;
 
 import static org.junit.Assert.assertEquals;
 
@@ -12,6 +12,10 @@ import org.junit.runner.RunWith;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+
+import uk.co.hughpowell.payments.PaymentsApplication;
+import uk.co.hughpowell.payments.repository.PaymentNotFound;
+import uk.co.hughpowell.payments.repository.PaymentsRepository;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;

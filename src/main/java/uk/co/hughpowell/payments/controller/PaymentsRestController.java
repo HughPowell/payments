@@ -1,4 +1,4 @@
-package uk.co.hughpowell.payments;
+package uk.co.hughpowell.payments.controller;
 
 import java.net.URI;
 
@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.TextNode;
+
+import uk.co.hughpowell.payments.repository.PaymentsRepository;
 
 @RestController
 @RequestMapping("/payments")

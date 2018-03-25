@@ -1,4 +1,4 @@
-package uk.co.hughpowell.payments;
+package uk.co.hughpowell.payments.repository;
 
 public class PaymentNotFound extends RuntimeException {
 	public PaymentNotFound(String paymentId) {

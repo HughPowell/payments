@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import cucumber.api.java8.En;
+import uk.co.hughpowell.payments.repository.PaymentsRepository;
 
 public class PaymentSteps extends StepsAbstractClass implements En {
 	private MediaType contentType = new MediaType(MediaType.APPLICATION_JSON.getType(),

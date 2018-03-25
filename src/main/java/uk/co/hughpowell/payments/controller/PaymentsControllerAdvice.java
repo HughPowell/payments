@@ -1,4 +1,4 @@
-package uk.co.hughpowell.payments;
+package uk.co.hughpowell.payments.controller;
 
 import org.springframework.hateoas.VndErrors;
 import org.springframework.http.HttpStatus;
@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+
+import uk.co.hughpowell.payments.repository.PaymentNotFound;
 
 @ControllerAdvice
 public class PaymentsControllerAdvice {

@@ -1,4 +1,4 @@
-package uk.co.hughpowell.payments;
+package uk.co.hughpowell.payments.controller;
 
 import org.springframework.hateoas.ResourceSupport;
 
