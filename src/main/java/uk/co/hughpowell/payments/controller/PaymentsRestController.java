@@ -11,9 +11,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.TextNode;
-
 import uk.co.hughpowell.payments.repository.PaymentsRepository;
 
 @RestController
@@ -43,6 +40,12 @@ public class PaymentsRestController {
 	@RequestMapping(method = RequestMethod.PUT, value = "/{paymentId}")
 	ResponseEntity<?> replacePayment(@RequestBody JsonNode payment) {
 		repository.replace(payment);
+		return ResponseEntity.noContent().build();
+	}
+	
+	@RequestMapping(method = RequestMethod.DELETE, value = "/{paymentId}")
+	ResponseEntity<?> deletePayment(@PathVariable String paymentId) {
+		repository.delete(paymentId);
 		return ResponseEntity.noContent().build();
 	}
 }

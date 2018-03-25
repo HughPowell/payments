@@ -12,3 +12,8 @@ Feature: Payments
 		Given that Alice has made a payment to Bob for 100 pounds
 		When she updates it to 200 pounds
 		Then she should see 200 pounds when she fetches the payment
+
+	Scenario: Alice deletes a payment she made to Bob
+		Given that Alice has made a payment to Bob
+		When she deletes it
+		Then she should no longer be able to fetch it

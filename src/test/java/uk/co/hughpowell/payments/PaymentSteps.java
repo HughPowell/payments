@@ -16,6 +16,7 @@ import java.nio.charset.Charset;
 import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -59,6 +60,16 @@ public class PaymentSteps extends StepsAbstractClass implements En {
 					.andReturn();
 		});
 		
+		Given("^that ([A-Z][a-z]*) has made a payment to ([A-Z][a-z]*)$",
+				(String personFrom, String personTo) -> {
+			payment = Payment.create(personFrom, personTo);
+			result = mockMvc.perform(post("/payments")
+					.content(payment.toString())
+					.contentType(contentType))
+					.andExpect(status().isCreated())
+					.andReturn();
+				});
+		
 		When("^([A-Z][a-z]*) makes a payment to ([A-Z][a-z]*)$",
 				(String personFrom, String personTo) -> {
 			payment = Payment.create(personFrom, personTo);
@@ -84,8 +95,14 @@ public class PaymentSteps extends StepsAbstractClass implements En {
 			mockMvc.perform(put(new URI(paymentLocation))
 					.content(updatedPayment.toString())
 					.contentType(contentType))
-					.andExpect(status().isNoContent())
-					.andReturn();
+					.andExpect(status().isNoContent());
+		});
+		
+		When("^she deletes it$", () -> {
+			String paymentLocation = result.getResponse().getHeader("Location");
+			mockMvc.perform(delete(new URI(paymentLocation))
+					.contentType(contentType))
+					.andExpect(status().isNoContent());
 		});
 		
 		Then("^they are able to fetch that payment$", () -> {
@@ -109,6 +126,13 @@ public class PaymentSteps extends StepsAbstractClass implements En {
 					.contentType(contentType))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.payment.amount", is(amount)));
+		});
+		
+		Then("she should no longer be able to fetch it$", () -> {
+			String paymentLocation = result.getResponse().getHeader("Location");
+			mockMvc.perform(get(new URI(paymentLocation))
+					.contentType(contentType))
+					.andExpect(status().isNotFound());
 		});
 	}
 }

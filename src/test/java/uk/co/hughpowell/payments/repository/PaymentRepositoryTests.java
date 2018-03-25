@@ -2,8 +2,6 @@ package uk.co.hughpowell.payments.repository;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import org.junit.Before;
@@ -11,7 +9,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import uk.co.hughpowell.payments.Payment;
 import uk.co.hughpowell.payments.PaymentsApplication;
@@ -32,7 +29,7 @@ public class PaymentRepositoryTests {
 	}
 
 	@Test
-	public void shouldGetAPaymentWhenOneIsCreated() {
+	public void shouldBeAbleToGetAPaymentWhenOneIsCreated() {
 		JsonNode payment = Payment.create("Alice", "Bob");
 		repository.create(payment);
 		
@@ -68,5 +65,16 @@ public class PaymentRepositoryTests {
 		repository.create(Payment.create("Alice", "Bob"));
 		
 		repository.replace(null);
+	}
+	
+	@Test(expected = PaymentNotFound.class)
+	public void shouldDeleteThePaymentAssociatedWithTheGivenId() {
+		JsonNode payment = Payment.create("Alice", "Bob");
+		String paymentId = payment.get("id").asText();
+		repository.create(payment);
+		
+		repository.delete(paymentId);
+		
+		repository.read(paymentId);
 	}
 }

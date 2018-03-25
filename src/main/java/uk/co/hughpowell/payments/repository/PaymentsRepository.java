@@ -26,4 +26,8 @@ public class PaymentsRepository {
 	public void replace(JsonNode payment) {
 		repository.put(payment.get("id").asText(), payment);
 	}
+	
+	public void delete(String paymentId) {
+		repository.remove(paymentId);
+	}
 }
