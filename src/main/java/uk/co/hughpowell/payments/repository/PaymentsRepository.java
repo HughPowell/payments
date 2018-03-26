@@ -61,12 +61,17 @@ public class PaymentsRepository {
 		}
 		String idOfPayment = payment.getIndex();
 		if (!indexId.equals(idOfPayment)) {
-			throw new MismatchedIds(indexId, idOfPayment);
-		}
+		   throw new MismatchedIds(indexId, idOfPayment);
+	   	}
 		BlockingQueue<UpdateResult> pipe = new ArrayBlockingQueue<UpdateResult>(1);
-		queue(new ReplaceUpdate(payment, digest, pipe));
-		if (pipe.take() == UpdateResult.MISMATCHED_DIGESTS) {
-			throw new MismatchedDigests();
+		queue(new ReplaceUpdate(indexId, digest, payment, pipe));
+		switch(pipe.take()) {
+			case MISMATCHED_DIGESTS:
+				throw new MismatchedDigests();
+			case MISMATCHED_IDS:
+				throw new MismatchedIds(indexId, payment.getIndex());
+			case DOES_NOT_EXIST:
+				throw new PaymentNotFound(indexId);
 		}
 	}
 	

@@ -112,6 +112,14 @@ public class PaymentRepositoryTests {
 	}
 	
 	@Test(expected = PaymentNotFound.class)
+	public void shouldThrowExceptionWhenUpdatingANonExistantPayment()
+			throws InterruptedException {
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
+				
+		repository.replace(payment.getIndex(), payment.getDigest(), payment);
+	}
+	
+	@Test(expected = PaymentNotFound.class)
 	public void shouldDeleteThePaymentAssociatedWithTheGivenId()
 			throws InterruptedException {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));

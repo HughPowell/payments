@@ -3,5 +3,7 @@ package uk.co.hughpowell.payments.repository;
 enum UpdateResult {
 	SUCCESS,
 	ALREADY_EXISTS,
-	MISMATCHED_DIGESTS
+	DOES_NOT_EXIST,
+	MISMATCHED_DIGESTS,
+	MISMATCHED_IDS
 }
