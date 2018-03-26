@@ -3,11 +3,11 @@ package uk.co.hughpowell.payments.repository;
 import java.util.Collection;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TransferQueue;
 
 import org.springframework.stereotype.Component;
+
+import com.lambdista.util.Try;
 
 @Component
 public class PaymentsRepository {
@@ -15,7 +15,7 @@ public class PaymentsRepository {
 	// TODO: Add configuration to make this configurable
 	private int timeToWaitForTransfer = 10;
 	
-	private TransferQueue<RepositoryUpdate> queue = new LinkedTransferQueue<RepositoryUpdate>();
+	private BlockingQueue<RepositoryUpdate> queue = new ArrayBlockingQueue<RepositoryUpdate>(1024);
 	
 	private ConcurrentRepository repository;
 	
@@ -24,24 +24,26 @@ public class PaymentsRepository {
 		new Thread(repository).start();
 	}
 	
-	private void queue(RepositoryUpdate update) throws InterruptedException {
-		boolean success = queue.tryTransfer(update,
+	private void queue(RepositoryUpdate update,
+			BlockingQueue<Try<RepositoryUpdate>> pipe)
+					throws Throwable {
+		boolean success = queue.offer(update,
 				timeToWaitForTransfer,
 				TimeUnit.SECONDS);
 		if (!success) {
 			throw new UpdateFailed(update);
 		}
+		Try<RepositoryUpdate> result = pipe.poll(timeToWaitForTransfer, TimeUnit.SECONDS);
+		result.checkedGet();
 	}
 	
-	public void create(Payment payment) throws InterruptedException {
+	public void create(Payment payment) throws Throwable {
 		if (payment == null) {
 			throw new NullPointerException("payment must not be null");
 		}
-		BlockingQueue<UpdateResult> pipe = new ArrayBlockingQueue<UpdateResult>(1);
-		queue(new CreateUpdate(payment, pipe));
-		if (pipe.take() == UpdateResult.ALREADY_EXISTS) {
-			throw new PaymentAlreadyExists(payment.getIndex());
-		}
+		BlockingQueue<Try<RepositoryUpdate>> pipe =
+				new ArrayBlockingQueue<Try<RepositoryUpdate>>(1);
+		queue(new CreateUpdate(payment, pipe), pipe);
 	}
 	
 	public Payment read(String indexId) {
@@ -52,7 +54,7 @@ public class PaymentsRepository {
 		return result;
 	}
 	
-	public void replace(String indexId, String digest, Payment payment) throws InterruptedException {
+	public void replace(String indexId, String digest, Payment payment) throws Throwable {
 		if (payment == null) {
 			throw new NullPointerException("payment is null");
 		}
@@ -63,20 +65,15 @@ public class PaymentsRepository {
 		if (!indexId.equals(idOfPayment)) {
 		   throw new MismatchedIds(indexId, idOfPayment);
 	   	}
-		BlockingQueue<UpdateResult> pipe = new ArrayBlockingQueue<UpdateResult>(1);
-		queue(new ReplaceUpdate(indexId, digest, payment, pipe));
-		switch(pipe.take()) {
-			case MISMATCHED_DIGESTS:
-				throw new MismatchedDigests();
-			case MISMATCHED_IDS:
-				throw new MismatchedIds(indexId, payment.getIndex());
-			case DOES_NOT_EXIST:
-				throw new PaymentNotFound(indexId);
-		}
+		BlockingQueue<Try<RepositoryUpdate>> pipe =
+				new ArrayBlockingQueue<Try<RepositoryUpdate>>(1);
+		queue(new ReplaceUpdate(indexId, digest, payment, pipe), pipe);
 	}
 	
-	public void delete(String indexId) throws InterruptedException {
-		queue(new RemoveUpdate(indexId));
+	public void delete(String indexId) throws Throwable {
+		BlockingQueue<Try<RepositoryUpdate>> pipe =
+				new ArrayBlockingQueue<Try<RepositoryUpdate>>(1);
+		queue(new RemoveUpdate(indexId, pipe), pipe);
 	}
 	
 	public Collection<Payment> readPayments() {

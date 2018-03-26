@@ -3,14 +3,19 @@ package uk.co.hughpowell.payments.repository;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
+import com.lambdista.util.Try;
+
 class ReplaceUpdate implements RepositoryUpdate {
 	
 	private final String index;
 	private final String digest;
 	private final Payment payment;
-	private final BlockingQueue<UpdateResult> pipe;
+	private final BlockingQueue<Try<RepositoryUpdate>> pipe;
 	
-	ReplaceUpdate(String index, String digest, Payment payment, BlockingQueue<UpdateResult> pipe) {
+	ReplaceUpdate(String index, 
+			String digest, 
+			Payment payment, 
+			BlockingQueue<Try<RepositoryUpdate>> pipe) {
 		this.index = index;
 		this.digest = digest;
 		this.payment = payment;
@@ -18,18 +23,23 @@ class ReplaceUpdate implements RepositoryUpdate {
 	}
 
 	@Override
-	public Map<String, Payment> update(Map<String, Payment> repository) throws InterruptedException {
+	public Try<RepositoryUpdate> update(Map<String, Payment> repository) throws InterruptedException {
 		Payment currentPayment = repository.get(payment.getIndex());
 		if (currentPayment == null) {
-			pipe.put(UpdateResult.DOES_NOT_EXIST);
+			return new Try.Failure<>(new PaymentNotFound(payment.getIndex()));
 		} else if (!currentPayment.getDigest().equals(digest)) {
-			pipe.put(UpdateResult.MISMATCHED_DIGESTS);
+			return new Try.Failure<>(new MismatchedDigests());
 		} else if (!currentPayment.getIndex().equals(index)) {
-			pipe.put(UpdateResult.MISMATCHED_IDS);
+			return new Try.Failure<>(
+					new MismatchedIds(currentPayment.getIndex(), index));
 		} else {
 			repository.put(payment.getIndex(), payment);
-			pipe.put(UpdateResult.SUCCESS);
+			return new Try.Success<RepositoryUpdate>(this);
 		}
-		return repository;
+	}
+
+	@Override
+	public void complete(Try<RepositoryUpdate> result) throws InterruptedException {
+		pipe.put(result);
 	}
 }

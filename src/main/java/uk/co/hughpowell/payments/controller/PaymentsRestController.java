@@ -33,7 +33,7 @@ public class PaymentsRestController {
 
 	@RequestMapping(method = RequestMethod.POST)
 	ResponseEntity<?> createPayment(@RequestBody JsonNode payment)
-			throws InterruptedException {
+			throws Throwable {
 		Payment storedPayment = new Payment(payment);
 		repository.create(new Payment(payment));
 		Link linkToPayment = new PaymentResource(payment).getLink("self");
@@ -70,7 +70,7 @@ public class PaymentsRestController {
 	ResponseEntity<?> replacePayment(
 			@PathVariable String paymentId,
 			@RequestBody JsonNode payment,
-			@RequestHeader("If-Match") String digest) throws InterruptedException {
+			@RequestHeader("If-Match") String digest) throws Throwable {
 		Payment storedPayment = new Payment(payment);
 		digest = stripQuotes(digest);
 		repository.replace(paymentId, digest, storedPayment);
@@ -82,7 +82,7 @@ public class PaymentsRestController {
 	
 	@RequestMapping(method = RequestMethod.DELETE, value = "/{paymentId}")
 	ResponseEntity<?> deletePayment(@PathVariable String paymentId)
-			throws InterruptedException {
+			throws Throwable {
 		repository.delete(paymentId);
 		return ResponseEntity.noContent().build();
 	}

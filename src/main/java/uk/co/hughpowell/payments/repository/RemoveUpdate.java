@@ -1,18 +1,28 @@
 package uk.co.hughpowell.payments.repository;
 
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+
+import com.lambdista.util.Try;
 
 class RemoveUpdate implements RepositoryUpdate {
 
 	private final String paymentId;
+	private final BlockingQueue<Try<RepositoryUpdate>> pipe;
 	
-	RemoveUpdate(String paymentId) {
+	RemoveUpdate(String paymentId, BlockingQueue<Try<RepositoryUpdate>> pipe) {
 		this.paymentId = paymentId;
+		this.pipe = pipe;
 	}
 	
 	@Override
-	public Map<String, Payment> update(Map<String, Payment> repository) {
+	public Try<RepositoryUpdate> update(Map<String, Payment> repository) {
 		repository.remove(paymentId);
-		return repository;
+		return new Try.Success<RepositoryUpdate>(this);
+	}
+	
+	@Override
+	public void complete(Try<RepositoryUpdate> result) throws InterruptedException {
+		pipe.put(result);
 	}
 }

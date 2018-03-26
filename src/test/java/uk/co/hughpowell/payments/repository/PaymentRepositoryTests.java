@@ -33,7 +33,7 @@ public class PaymentRepositoryTests {
 
 	@Test
 	public void shouldBeAbleToGetAPaymentWhenOneIsCreated()
-			throws InterruptedException {
+			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		repository.create(payment);
 		
@@ -44,13 +44,13 @@ public class PaymentRepositoryTests {
 	
 	@Test(expected = NullPointerException.class)
 	public void shouldThrowExceptionWhenCreatingANullPayment()
-			throws InterruptedException {
+			throws Throwable {
 		repository.create(null);
 	}
 	
 	@Test(expected = PaymentAlreadyExists.class)
 	public void shouldThrowExceptionWhenCreatingAPaymentThatAlreadyExists()
-			throws InterruptedException {
+			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		repository.create(payment);
 		repository.create(payment);
@@ -63,7 +63,7 @@ public class PaymentRepositoryTests {
 	
 	@Test
 	public void shouldReplaceTheExistingPaymentWithTheOneGiven()
-			throws InterruptedException {
+			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob", 100));
 		repository.create(payment);
 		
@@ -78,7 +78,7 @@ public class PaymentRepositoryTests {
 	
 	@Test(expected = NullPointerException.class)
 	public void shouldThrowExceptionWhenReplacingWithANullPayment()
-			throws InterruptedException {
+			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		repository.create(payment);
 		
@@ -87,14 +87,14 @@ public class PaymentRepositoryTests {
 	
 	@Test(expected = NullDigest.class)
 	public void shouldThrowExceptionWhenNoDigestIsProvided()
-			throws InterruptedException {
+			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		repository.replace(payment.getIndex(), null, payment);
 	}
 	
 	@Test(expected = MismatchedIds.class)
 	public void shouldThrowExceptionWhenGivenPaymentIdAndIdOfPaymentAreMismatched()
-			throws InterruptedException {
+			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		String differentPaymentId = UUID.randomUUID().toString();
 		
@@ -103,7 +103,7 @@ public class PaymentRepositoryTests {
 	
 	@Test(expected = MismatchedDigests.class)
 	public void shouldThrowExceptionWhenGivenDigestDoesNotMatchDigestOfCurrentPayment()
-			throws InterruptedException {
+			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		repository.create(payment);
 		Payment updatedPayment = 
@@ -113,7 +113,7 @@ public class PaymentRepositoryTests {
 	
 	@Test(expected = PaymentNotFound.class)
 	public void shouldThrowExceptionWhenUpdatingANonExistantPayment()
-			throws InterruptedException {
+			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 				
 		repository.replace(payment.getIndex(), payment.getDigest(), payment);
@@ -121,7 +121,7 @@ public class PaymentRepositoryTests {
 	
 	@Test(expected = PaymentNotFound.class)
 	public void shouldDeleteThePaymentAssociatedWithTheGivenId()
-			throws InterruptedException {
+			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		repository.create(payment);
 		
@@ -137,7 +137,7 @@ public class PaymentRepositoryTests {
 	}
 	
 	@Test
-	public void shouldReturnAListOfAllPayments() throws InterruptedException {
+	public void shouldReturnAListOfAllPayments() throws Throwable {
 		repository.create(new Payment(PaymentUtils.create("Alice", "Bob", 100)));
 		repository.create(new Payment(PaymentUtils.create("Alice", "Bob", 200)));
 		repository.create(new Payment(PaymentUtils.create("Alice", "Bob", 300)));

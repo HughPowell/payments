@@ -6,6 +6,7 @@ import java.util.concurrent.BlockingQueue;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
+import com.lambdista.util.Try;
 
 class ConcurrentRepository implements Runnable {
 
@@ -26,7 +27,7 @@ class ConcurrentRepository implements Runnable {
 		return repositoryView.values();
 	}
 	
-	private void updateView(Map<String, Payment> repository) {
+	private void updateView() {
 		repositoryView = ImmutableMap.copyOf(repository);
 	}
 
@@ -34,13 +35,10 @@ class ConcurrentRepository implements Runnable {
 	public void run() {
 		while (true) {
 			try {
-				RepositoryUpdate update = queue.peek();
-				if (update != null) {
-					updateView(update.update(repository));
-					queue.take();
-				} else {
-					Thread.sleep(1);
-				}
+				RepositoryUpdate update = queue.take();
+				Try<RepositoryUpdate> result = update.update(repository);
+				updateView();
+				update.complete(result);
 			} catch (InterruptedException e) {
 				return;
 			}
@@ -50,6 +48,6 @@ class ConcurrentRepository implements Runnable {
 	// TODO: Work out how to get Cucumber to recycle the repository
 	public void clear() {
 		repository.clear();
-		updateView(repository);
+		updateView();
 	}
 }
