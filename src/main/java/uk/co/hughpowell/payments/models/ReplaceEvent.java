@@ -1,21 +1,21 @@
-package uk.co.hughpowell.payments.repository;
+package uk.co.hughpowell.payments.models;
 
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 import com.lambdista.util.Try;
 
-class ReplaceUpdate implements RepositoryUpdate {
+public class ReplaceEvent implements Event {
 	
 	private final String index;
 	private final String digest;
 	private final Payment payment;
-	private final BlockingQueue<Try<RepositoryUpdate>> pipe;
+	private final BlockingQueue<Try<Event>> pipe;
 	
-	ReplaceUpdate(String index, 
+	public ReplaceEvent(String index, 
 			String digest, 
 			Payment payment, 
-			BlockingQueue<Try<RepositoryUpdate>> pipe) {
+			BlockingQueue<Try<Event>> pipe) {
 		this.index = index;
 		this.digest = digest;
 		this.payment = payment;
@@ -23,23 +23,23 @@ class ReplaceUpdate implements RepositoryUpdate {
 	}
 
 	@Override
-	public Try<RepositoryUpdate> update(Map<String, Payment> repository) throws InterruptedException {
+	public Try<Event> update(Map<String, Payment> repository) throws InterruptedException {
 		Payment currentPayment = repository.get(payment.getIndex());
 		if (currentPayment == null) {
-			return new Try.Failure<>(new PaymentNotFound(payment.getIndex()));
+			return new Try.Failure<>(new PaymentNotFoundException(payment.getIndex()));
 		} else if (!currentPayment.getDigest().equals(digest)) {
-			return new Try.Failure<>(new MismatchedDigests());
+			return new Try.Failure<>(new MismatchedDigestsException());
 		} else if (!currentPayment.getIndex().equals(index)) {
 			return new Try.Failure<>(
-					new MismatchedIds(currentPayment.getIndex(), index));
+					new MismatchedIdsException(currentPayment.getIndex(), index));
 		} else {
 			repository.put(payment.getIndex(), payment);
-			return new Try.Success<RepositoryUpdate>(this);
+			return new Try.Success<Event>(this);
 		}
 	}
 
 	@Override
-	public void complete(Try<RepositoryUpdate> result) throws InterruptedException {
+	public void complete(Try<Event> result) throws InterruptedException {
 		pipe.put(result);
 	}
 }

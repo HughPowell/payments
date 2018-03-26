@@ -7,46 +7,46 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-import uk.co.hughpowell.payments.repository.MismatchedDigests;
-import uk.co.hughpowell.payments.repository.MismatchedIds;
-import uk.co.hughpowell.payments.repository.NullDigest;
-import uk.co.hughpowell.payments.repository.PaymentAlreadyExists;
-import uk.co.hughpowell.payments.repository.PaymentNotFound;
+import uk.co.hughpowell.payments.models.MismatchedDigestsException;
+import uk.co.hughpowell.payments.models.MismatchedIdsException;
+import uk.co.hughpowell.payments.models.PaymentAlreadyExistsException;
+import uk.co.hughpowell.payments.models.PaymentNotFoundException;
+import uk.co.hughpowell.payments.orchestrator.NullDigestException;
 
 @ControllerAdvice
 public class PaymentsControllerAdvice {
 	@ResponseBody
-	@ExceptionHandler(PaymentNotFound.class)
+	@ExceptionHandler(PaymentNotFoundException.class)
 	@ResponseStatus(HttpStatus.NOT_FOUND)
-	VndErrors paymentNotFoundHandler(PaymentNotFound ex) {
+	VndErrors paymentNotFoundHandler(PaymentNotFoundException ex) {
 		return new VndErrors("error", ex.getMessage());
 	}
 		
 	@ResponseBody
-	@ExceptionHandler(PaymentAlreadyExists.class)
+	@ExceptionHandler(PaymentAlreadyExistsException.class)
 	@ResponseStatus(HttpStatus.CONFLICT)
-	VndErrors paymentAlreadyExistsHandler(PaymentAlreadyExists ex) {
+	VndErrors paymentAlreadyExistsHandler(PaymentAlreadyExistsException ex) {
 		return new VndErrors("error", ex.getMessage());
 	}
 
 	@ResponseBody
-	@ExceptionHandler(MismatchedIds.class)
+	@ExceptionHandler(MismatchedIdsException.class)
 	@ResponseStatus(HttpStatus.CONFLICT)
-	VndErrors mismatchedIdsHandler(MismatchedIds ex) {
+	VndErrors mismatchedIdsHandler(MismatchedIdsException ex) {
 		return new VndErrors("error", ex.getMessage());
 	}
 
 	@ResponseBody
-	@ExceptionHandler(MismatchedDigests.class)
+	@ExceptionHandler(MismatchedDigestsException.class)
 	@ResponseStatus(HttpStatus.CONFLICT)
-	VndErrors mismatchedDigestsHandler(MismatchedDigests ex) {
+	VndErrors mismatchedDigestsHandler(MismatchedDigestsException ex) {
 		return new VndErrors("error", ex.getMessage());
 	}
 
 	@ResponseBody
-	@ExceptionHandler(NullDigest.class)
+	@ExceptionHandler(NullDigestException.class)
 	@ResponseStatus(HttpStatus.PRECONDITION_REQUIRED)
-	VndErrors nullDigestHandler(NullDigest ex) {
+	VndErrors nullDigestHandler(NullDigestException ex) {
 		return new VndErrors("error", ex.getMessage());
 	}
 }

@@ -1,4 +1,4 @@
-package uk.co.hughpowell.payments.repository;
+package uk.co.hughpowell.payments.projections;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,22 +8,30 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import com.lambdista.util.Try;
 
-class ConcurrentRepository implements Runnable {
+import uk.co.hughpowell.payments.models.Event;
+import uk.co.hughpowell.payments.models.Payment;
+import uk.co.hughpowell.payments.models.PaymentNotFoundException;
+
+public class PaymentsReadProjection implements Runnable {
 
 	private final Map<String, Payment> repository = new HashMap<String, Payment>();
 
 	private ImmutableMap<String, Payment> repositoryView = ImmutableMap.copyOf(repository);
-	private final BlockingQueue<RepositoryUpdate> queue;
+	private final BlockingQueue<Event> queue;
 	
-	ConcurrentRepository(BlockingQueue<RepositoryUpdate> queue) {
+	public PaymentsReadProjection(BlockingQueue<Event> queue) {
 		this.queue = queue;
 	}
 	
-	Payment get(String paymentId) {
-		return repositoryView.get(paymentId);
+	public Payment read(String indexId) {
+		Payment result = repositoryView.get(indexId);
+		if (result == null) {
+			throw new PaymentNotFoundException(indexId);
+		}
+		return result;
 	}
 	
-	ImmutableCollection<Payment> get() {
+	public ImmutableCollection<Payment> readPayments() {
 		return repositoryView.values();
 	}
 	
@@ -35,8 +43,8 @@ class ConcurrentRepository implements Runnable {
 	public void run() {
 		while (true) {
 			try {
-				RepositoryUpdate update = queue.take();
-				Try<RepositoryUpdate> result = update.update(repository);
+				Event update = queue.take();
+				Try<Event> result = update.update(repository);
 				updateView();
 				update.complete(result);
 			} catch (InterruptedException e) {

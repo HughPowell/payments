@@ -1,4 +1,4 @@
-package uk.co.hughpowell.payments.repository;
+package uk.co.hughpowell.payments.models;
 
 import org.springframework.util.DigestUtils;
 

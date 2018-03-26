@@ -9,7 +9,6 @@ import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -18,24 +17,25 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import uk.co.hughpowell.payments.repository.PaymentsRepository;
-import uk.co.hughpowell.payments.repository.Payment;
+
+import uk.co.hughpowell.payments.models.Payment;
+import uk.co.hughpowell.payments.orchestrator.PaymentsOrchestrator;
 
 @RestController
 @RequestMapping("/payments")
 public class PaymentsRestController {
 	
-	private final PaymentsRepository repository;
+	private final PaymentsOrchestrator orchestrator;
 	
-	PaymentsRestController(PaymentsRepository paymentsRepository) {
-		this.repository = paymentsRepository;
+	PaymentsRestController(PaymentsOrchestrator orchestrator) {
+		this.orchestrator = orchestrator;
 	}
 
 	@RequestMapping(method = RequestMethod.POST)
 	ResponseEntity<?> createPayment(@RequestBody JsonNode payment)
 			throws Throwable {
 		Payment storedPayment = new Payment(payment);
-		repository.create(new Payment(payment));
+		orchestrator.create(new Payment(payment));
 		Link linkToPayment = new PaymentResource(payment).getLink("self");
 		URI uriToPayment = URI.create(linkToPayment.getHref());
 		return ResponseEntity
@@ -46,7 +46,7 @@ public class PaymentsRestController {
 	
 	@RequestMapping(method = RequestMethod.GET)
 	Resources<PaymentResource> readPayments() {
-		List<PaymentResource> paymentResources = repository
+		List<PaymentResource> paymentResources = orchestrator
 				.readPayments()
 				.stream()
 				.map(storedPayment -> new PaymentResource(storedPayment.getData()))
@@ -56,7 +56,7 @@ public class PaymentsRestController {
 
 	@RequestMapping(method = RequestMethod.GET, value = "/{paymentId}")
 	ResponseEntity<PaymentResource> readPayment(@PathVariable String paymentId) {
-		Payment payment = repository.read(paymentId);
+		Payment payment = orchestrator.read(paymentId);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setETag("\"" + payment.getDigest() + "\"");
 		return new ResponseEntity<PaymentResource>(new PaymentResource(payment.getData()), headers, HttpStatus.OK);
@@ -73,7 +73,7 @@ public class PaymentsRestController {
 			@RequestHeader("If-Match") String digest) throws Throwable {
 		Payment storedPayment = new Payment(payment);
 		digest = stripQuotes(digest);
-		repository.replace(paymentId, digest, storedPayment);
+		orchestrator.replace(paymentId, digest, storedPayment);
 		return ResponseEntity
 				.noContent()
 				.eTag("\"" + storedPayment.getDigest() + "\"")
@@ -83,7 +83,7 @@ public class PaymentsRestController {
 	@RequestMapping(method = RequestMethod.DELETE, value = "/{paymentId}")
 	ResponseEntity<?> deletePayment(@PathVariable String paymentId)
 			throws Throwable {
-		repository.delete(paymentId);
+		orchestrator.delete(paymentId);
 		return ResponseEntity.noContent().build();
 	}
 }

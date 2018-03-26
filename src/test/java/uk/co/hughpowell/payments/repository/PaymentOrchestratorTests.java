@@ -15,29 +15,35 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import uk.co.hughpowell.payments.PaymentUtils;
 import uk.co.hughpowell.payments.PaymentsApplication;
-import uk.co.hughpowell.payments.repository.PaymentNotFound;
-import uk.co.hughpowell.payments.repository.PaymentsRepository;
+import uk.co.hughpowell.payments.models.MismatchedDigestsException;
+import uk.co.hughpowell.payments.models.MismatchedIdsException;
+import uk.co.hughpowell.payments.models.Payment;
+import uk.co.hughpowell.payments.models.PaymentAlreadyExistsException;
+import uk.co.hughpowell.payments.models.PaymentNotFoundException;
+import uk.co.hughpowell.payments.orchestrator.NullDigestException;
+import uk.co.hughpowell.payments.orchestrator.PaymentsOrchestrator;
+import uk.co.hughpowell.payments.store.InMemoryStorage;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = PaymentsApplication.class)
-public class PaymentRepositoryTests {
-	private PaymentsRepository repository;
+public class PaymentOrchestratorTests {
+	private PaymentsOrchestrator orchestrator;
 	
 	@Before
-	public void setup() {
-		repository = new PaymentsRepository();
+	public void setup() throws InterruptedException {
+		orchestrator = new PaymentsOrchestrator(new InMemoryStorage());
 	}
 
 	@Test
 	public void shouldBeAbleToGetAPaymentWhenOneIsCreated()
 			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
-		repository.create(payment);
+		orchestrator.create(payment);
 		
-		Payment retrievedPayment = repository.read(payment.getIndex());
+		Payment retrievedPayment = orchestrator.read(payment.getIndex());
 		
 		assertEquals(payment, retrievedPayment);
 	}
@@ -45,34 +51,34 @@ public class PaymentRepositoryTests {
 	@Test(expected = NullPointerException.class)
 	public void shouldThrowExceptionWhenCreatingANullPayment()
 			throws Throwable {
-		repository.create(null);
+		orchestrator.create(null);
 	}
 	
-	@Test(expected = PaymentAlreadyExists.class)
+	@Test(expected = PaymentAlreadyExistsException.class)
 	public void shouldThrowExceptionWhenCreatingAPaymentThatAlreadyExists()
 			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
-		repository.create(payment);
-		repository.create(payment);
+		orchestrator.create(payment);
+		orchestrator.create(payment);
 	}
 	
-	@Test(expected = PaymentNotFound.class)
+	@Test(expected = PaymentNotFoundException.class)
 	public void shouldThrowExceptionWhenGettingNonExistantPayment() {
-		repository.read(UUID.randomUUID().toString());
+		orchestrator.read(UUID.randomUUID().toString());
 	}
 	
 	@Test
 	public void shouldReplaceTheExistingPaymentWithTheOneGiven()
 			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob", 100));
-		repository.create(payment);
+		orchestrator.create(payment);
 		
 		JsonNode updatedPayment = PaymentUtils.updateAmount(payment.getData(), 200);
-		repository.replace(payment.getIndex(),
+		orchestrator.replace(payment.getIndex(),
 				payment.getDigest(),
 				new Payment(updatedPayment));
 		
-		Payment retrievedPayment = repository.read(payment.getIndex());
+		Payment retrievedPayment = orchestrator.read(payment.getIndex());
 		assertEquals(updatedPayment, retrievedPayment.getData());
 	}
 	
@@ -80,69 +86,69 @@ public class PaymentRepositoryTests {
 	public void shouldThrowExceptionWhenReplacingWithANullPayment()
 			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
-		repository.create(payment);
+		orchestrator.create(payment);
 		
-		repository.replace(payment.getIndex(), payment.getDigest(), null);
+		orchestrator.replace(payment.getIndex(), payment.getDigest(), null);
 	}
 	
-	@Test(expected = NullDigest.class)
+	@Test(expected = NullDigestException.class)
 	public void shouldThrowExceptionWhenNoDigestIsProvided()
 			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
-		repository.replace(payment.getIndex(), null, payment);
+		orchestrator.replace(payment.getIndex(), null, payment);
 	}
 	
-	@Test(expected = MismatchedIds.class)
+	@Test(expected = MismatchedIdsException.class)
 	public void shouldThrowExceptionWhenGivenPaymentIdAndIdOfPaymentAreMismatched()
 			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		String differentPaymentId = UUID.randomUUID().toString();
 		
-		repository.replace(differentPaymentId, payment.getDigest(), payment);
+		orchestrator.replace(differentPaymentId, payment.getDigest(), payment);
 	}
 	
-	@Test(expected = MismatchedDigests.class)
+	@Test(expected = MismatchedDigestsException.class)
 	public void shouldThrowExceptionWhenGivenDigestDoesNotMatchDigestOfCurrentPayment()
 			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
-		repository.create(payment);
+		orchestrator.create(payment);
 		Payment updatedPayment = 
 				new Payment(PaymentUtils.updateAmount(payment.getData(), 200));
-		repository.replace(updatedPayment.getIndex(), "SomeOtherDigest", updatedPayment);
+		orchestrator.replace(updatedPayment.getIndex(), "SomeOtherDigest", updatedPayment);
 	}
 	
-	@Test(expected = PaymentNotFound.class)
+	@Test(expected = PaymentNotFoundException.class)
 	public void shouldThrowExceptionWhenUpdatingANonExistantPayment()
 			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 				
-		repository.replace(payment.getIndex(), payment.getDigest(), payment);
+		orchestrator.replace(payment.getIndex(), payment.getDigest(), payment);
 	}
 	
-	@Test(expected = PaymentNotFound.class)
+	@Test(expected = PaymentNotFoundException.class)
 	public void shouldDeleteThePaymentAssociatedWithTheGivenId()
 			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
-		repository.create(payment);
+		orchestrator.create(payment);
 		
-		repository.delete(payment.getIndex());
+		orchestrator.delete(payment.getIndex());
 		
-		repository.read(payment.getIndex());
+		orchestrator.read(payment.getIndex());
 	}
 	
 	@Test
 	public void shouldReturnAnEmptyCollectionWhenThereAreNoPayments() {
-		Collection<Payment> payments = repository.readPayments();
+		Collection<Payment> payments = orchestrator.readPayments();
 		assert(payments.isEmpty());
 	}
 	
 	@Test
 	public void shouldReturnAListOfAllPayments() throws Throwable {
-		repository.create(new Payment(PaymentUtils.create("Alice", "Bob", 100)));
-		repository.create(new Payment(PaymentUtils.create("Alice", "Bob", 200)));
-		repository.create(new Payment(PaymentUtils.create("Alice", "Bob", 300)));
+		orchestrator.create(new Payment(PaymentUtils.create("Alice", "Bob", 100)));
+		orchestrator.create(new Payment(PaymentUtils.create("Alice", "Bob", 200)));
+		orchestrator.create(new Payment(PaymentUtils.create("Alice", "Bob", 300)));
 		
-		Collection<Payment> payments = repository.readPayments();
+		Collection<Payment> payments = orchestrator.readPayments();
 		
 		Set<String> ids = payments
 				.stream()

@@ -29,14 +29,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import cucumber.api.java8.En;
-import uk.co.hughpowell.payments.repository.PaymentsRepository;
+import uk.co.hughpowell.payments.orchestrator.PaymentsOrchestrator;
 
 public class PaymentSteps extends StepsAbstractClass implements En {
 	private MediaType contentType = new MediaType(MediaType.APPLICATION_JSON.getType(),
 			MediaType.APPLICATION_JSON.getSubtype(), Charset.forName("utf8"));
 
 	@Autowired
-	private PaymentsRepository paymentsRepository;
+	private PaymentsOrchestrator orchestrator;
 	
 	@Autowired
 	private WebApplicationContext webApplicationContext;
@@ -53,7 +53,7 @@ public class PaymentSteps extends StepsAbstractClass implements En {
 	public void setup() {
 		mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
 		result = null;
-		paymentsRepository.empty();
+		orchestrator.clear();
 	}
 	
 	public PaymentSteps() {
