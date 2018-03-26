@@ -1,4 +1,4 @@
-package uk.co.hughpowell.payments.models;
+package uk.co.hughpowell.payments.validation;
 
 public class MismatchedIdsException extends RuntimeException {
 	public MismatchedIdsException(String indexId, String idOfPayment) {

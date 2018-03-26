@@ -7,11 +7,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-import uk.co.hughpowell.payments.models.MismatchedDigestsException;
-import uk.co.hughpowell.payments.models.MismatchedIdsException;
-import uk.co.hughpowell.payments.models.PaymentAlreadyExistsException;
-import uk.co.hughpowell.payments.models.PaymentNotFoundException;
-import uk.co.hughpowell.payments.orchestrator.NullDigestException;
+import uk.co.hughpowell.payments.validation.MismatchedDigestsException;
+import uk.co.hughpowell.payments.validation.MismatchedIdsException;
+import uk.co.hughpowell.payments.validation.NullDigestException;
+import uk.co.hughpowell.payments.validation.PaymentAlreadyExistsException;
+import uk.co.hughpowell.payments.validation.PaymentNotFoundException;
 
 @ControllerAdvice
 public class PaymentsControllerAdvice {

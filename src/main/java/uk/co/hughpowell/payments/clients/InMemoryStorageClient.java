@@ -1,18 +1,16 @@
-package uk.co.hughpowell.payments.store;
+package uk.co.hughpowell.payments.clients;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.ImmutableList;
-
 import uk.co.hughpowell.payments.models.Event;
+import uk.co.hughpowell.payments.store.PaymentsStorage;
 
 @Component
-public class InMemoryStorage implements PaymentsStorage {
+public class InMemoryStorageClient implements PaymentsStorage {
 	
 	private boolean shouldFail = false;
 	private List<Event> source = new ArrayList<Event>();

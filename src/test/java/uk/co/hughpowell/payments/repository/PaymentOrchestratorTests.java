@@ -5,6 +5,8 @@ import static org.junit.Assert.assertEquals;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
@@ -15,14 +17,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import uk.co.hughpowell.payments.PaymentUtils;
 import uk.co.hughpowell.payments.PaymentsApplication;
-import uk.co.hughpowell.payments.models.MismatchedDigestsException;
-import uk.co.hughpowell.payments.models.MismatchedIdsException;
+import uk.co.hughpowell.payments.clients.InMemoryStorageClient;
+import uk.co.hughpowell.payments.models.CreateEvent;
+import uk.co.hughpowell.payments.models.DeleteEvent;
+import uk.co.hughpowell.payments.models.Event;
 import uk.co.hughpowell.payments.models.Payment;
-import uk.co.hughpowell.payments.models.PaymentAlreadyExistsException;
-import uk.co.hughpowell.payments.models.PaymentNotFoundException;
-import uk.co.hughpowell.payments.orchestrator.NullDigestException;
+import uk.co.hughpowell.payments.models.ReplaceEvent;
 import uk.co.hughpowell.payments.orchestrator.PaymentsOrchestrator;
-import uk.co.hughpowell.payments.store.InMemoryStorage;
+import uk.co.hughpowell.payments.validation.MismatchedDigestsException;
+import uk.co.hughpowell.payments.validation.MismatchedIdsException;
+import uk.co.hughpowell.payments.validation.NullDigestException;
+import uk.co.hughpowell.payments.validation.PaymentAlreadyExistsException;
+import uk.co.hughpowell.payments.validation.PaymentNotFoundException;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -31,10 +37,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest(classes = PaymentsApplication.class)
 public class PaymentOrchestratorTests {
 	private PaymentsOrchestrator orchestrator;
+	private InMemoryStorageClient storageClient; 
 	
 	@Before
 	public void setup() throws InterruptedException {
-		orchestrator = new PaymentsOrchestrator(new InMemoryStorage());
+		storageClient = new InMemoryStorageClient();
+		orchestrator = new PaymentsOrchestrator(storageClient);
 	}
 
 	@Test
@@ -48,6 +56,19 @@ public class PaymentOrchestratorTests {
 		assertEquals(payment, retrievedPayment);
 	}
 	
+	@Test
+	public void shouldStoreEventWhenCreatedEventReceived() throws Throwable {
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
+		orchestrator.create(payment);
+		
+		BlockingQueue<Event> queue = new ArrayBlockingQueue<Event>(5);
+		storageClient.publishAllEvents(queue);
+		
+		assertEquals(CreateEvent.class, queue.take().getClass());
+		assert(queue.isEmpty());
+		
+	}
+	
 	@Test(expected = NullPointerException.class)
 	public void shouldThrowExceptionWhenCreatingANullPayment()
 			throws Throwable {
@@ -59,6 +80,14 @@ public class PaymentOrchestratorTests {
 			throws Throwable {
 		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		orchestrator.create(payment);
+		orchestrator.create(payment);
+	}
+	
+	@Test(expected = RuntimeException.class)
+	public void shouldThrowExceptionWhenWritingCreatedEventToStorageFails()
+			throws Throwable {
+		storageClient.shouldFail();
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
 		orchestrator.create(payment);
 	}
 	
@@ -80,6 +109,21 @@ public class PaymentOrchestratorTests {
 		
 		Payment retrievedPayment = orchestrator.read(payment.getIndex());
 		assertEquals(updatedPayment, retrievedPayment.getData());
+	}
+
+	@Test
+	public void shouldStoreEventWhenReplacementEventReceived() throws Throwable {
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
+		orchestrator.create(payment);
+		orchestrator.replace(payment.getIndex(), payment.getDigest(), payment);
+		
+		BlockingQueue<Event> queue = new ArrayBlockingQueue<Event>(5);
+		storageClient.publishAllEvents(queue);
+		
+		assertEquals(CreateEvent.class, queue.take().getClass());
+		assertEquals(ReplaceEvent.class, queue.take().getClass());
+		assert(queue.isEmpty());
+		
 	}
 	
 	@Test(expected = NullPointerException.class)
@@ -124,6 +168,15 @@ public class PaymentOrchestratorTests {
 				
 		orchestrator.replace(payment.getIndex(), payment.getDigest(), payment);
 	}
+
+	@Test(expected = RuntimeException.class)
+	public void shouldThrowExceptionWhenWritingReplacementEventToStorageFails()
+			throws Throwable {
+		storageClient.shouldFail();
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
+
+		orchestrator.replace("SomeIndex", "SomeDigest", payment);
+	}
 	
 	@Test(expected = PaymentNotFoundException.class)
 	public void shouldDeleteThePaymentAssociatedWithTheGivenId()
@@ -135,7 +188,30 @@ public class PaymentOrchestratorTests {
 		
 		orchestrator.read(payment.getIndex());
 	}
+
+	@Test
+	public void shouldStoreEventWhenDeletionEventReceived() throws Throwable {
+		Payment payment = new Payment(PaymentUtils.create("Alice", "Bob"));
+		orchestrator.create(payment);
+		orchestrator.delete(payment.getIndex());
+		
+		BlockingQueue<Event> queue = new ArrayBlockingQueue<Event>(5);
+		storageClient.publishAllEvents(queue);
+		
+		assertEquals(CreateEvent.class, queue.take().getClass());
+		assertEquals(DeleteEvent.class, queue.take().getClass());
+		assert(queue.isEmpty());
+		
+	}
 	
+	@Test(expected = RuntimeException.class)
+	public void shouldThrowExceptionWhenWritingDeletionEventToStorageFails()
+			throws Throwable {
+		storageClient.shouldFail();
+
+		orchestrator.delete("SomeIndex");
+	}
+
 	@Test
 	public void shouldReturnAnEmptyCollectionWhenThereAreNoPayments() {
 		Collection<Payment> payments = orchestrator.readPayments();

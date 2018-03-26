@@ -11,7 +11,8 @@ public class PaymentsStore {
 	private final PaymentsStorage storage;
 	private final BlockingQueue<Event> queue;
 	
-	public PaymentsStore(PaymentsStorage storage, BlockingQueue<Event> queue) throws InterruptedException {
+	public PaymentsStore(PaymentsStorage storage, BlockingQueue<Event> queue)
+			throws InterruptedException {
 		this.storage = storage;
 		this.queue = queue;
 		storage.publishAllEvents(queue);

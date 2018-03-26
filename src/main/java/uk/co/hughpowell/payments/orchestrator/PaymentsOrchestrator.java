@@ -10,12 +10,13 @@ import com.lambdista.util.Try;
 
 import uk.co.hughpowell.payments.models.CreateEvent;
 import uk.co.hughpowell.payments.models.Event;
-import uk.co.hughpowell.payments.models.MismatchedIdsException;
 import uk.co.hughpowell.payments.models.Payment;
-import uk.co.hughpowell.payments.models.RemoveEvent;
+import uk.co.hughpowell.payments.models.DeleteEvent;
 import uk.co.hughpowell.payments.models.ReplaceEvent;
 import uk.co.hughpowell.payments.projections.PaymentsReadProjection;
 import uk.co.hughpowell.payments.store.PaymentsStore;
+import uk.co.hughpowell.payments.validation.CreationValidator;
+import uk.co.hughpowell.payments.validation.ReplacementValidator;
 import uk.co.hughpowell.payments.store.PaymentsStorage;
 
 @Component
@@ -32,30 +33,10 @@ public class PaymentsOrchestrator {
 		new Thread(projection).start();
 	}
 
-	public void validateCreation(Payment payment) {
-		if (payment == null) {
-			throw new NullPointerException("payment must not be null");
-		}
-	}
-
-	public void validateReplacement(String indexId, String digest, Payment payment) {
-		if (payment == null) {
-			throw new NullPointerException("payment is null");
-		}
-		if (digest == null) {
-			throw new NullDigestException();
-		}
-		String idOfPayment = payment.getIndex();
-		if (!indexId.equals(idOfPayment)) {
-		   throw new MismatchedIdsException(indexId, idOfPayment);
-	   	}
-	}
-
 	public void create(Payment payment) throws Throwable {
-		validateCreation(payment);
 		BlockingQueue<Try<Event>> pipe =
 				new ArrayBlockingQueue<Try<Event>>(1);
-		Event update = new CreateEvent(payment, pipe);
+		Event update = new CreateEvent(payment, new CreationValidator(), pipe);
 		store.store(update);
 		pipe.take().checkedGet();
 	}
@@ -64,11 +45,13 @@ public class PaymentsOrchestrator {
 		return projection.read(indexId);
 	}
 	
-	public void replace(String indexId, String digest, Payment payment) throws Throwable {
-		validateReplacement(indexId, digest, payment);
+	public void replace(String indexToBeUpdated, String lastKnownDigest, Payment payment) throws Throwable {
 		BlockingQueue<Try<Event>> pipe =
 				new ArrayBlockingQueue<Try<Event>>(1);
-		Event update = new ReplaceEvent(indexId, digest, payment, pipe);
+		Event update = new ReplaceEvent(
+				payment,
+				new ReplacementValidator(indexToBeUpdated, lastKnownDigest),
+				pipe);
 		store.store(update);
 		pipe.take().checkedGet();
 	}
@@ -76,7 +59,7 @@ public class PaymentsOrchestrator {
 	public void delete(String indexId) throws Throwable {
 		BlockingQueue<Try<Event>> pipe =
 				new ArrayBlockingQueue<Try<Event>>(1);
-		Event update = new RemoveEvent(indexId, pipe);
+		Event update = new DeleteEvent(indexId, pipe);
 		store.store(update);
 		pipe.take().checkedGet();
 	}

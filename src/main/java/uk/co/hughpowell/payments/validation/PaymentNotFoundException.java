@@ -1,4 +1,4 @@
-package uk.co.hughpowell.payments.models;
+package uk.co.hughpowell.payments.validation;
 
 public class PaymentNotFoundException extends RuntimeException {
 	public PaymentNotFoundException(String paymentId) {

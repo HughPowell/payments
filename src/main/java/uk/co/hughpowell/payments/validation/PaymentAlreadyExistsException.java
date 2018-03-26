@@ -1,4 +1,4 @@
-package uk.co.hughpowell.payments.models;
+package uk.co.hughpowell.payments.validation;
 
 public class PaymentAlreadyExistsException extends RuntimeException {
 	public PaymentAlreadyExistsException(String paymentId) {

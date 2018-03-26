@@ -7,35 +7,24 @@ import com.lambdista.util.Try;
 
 public class ReplaceEvent implements Event {
 	
-	private final String index;
-	private final String digest;
 	private final Payment payment;
+	private final Validator validator;
 	private final BlockingQueue<Try<Event>> pipe;
 	
-	public ReplaceEvent(String index, 
-			String digest, 
-			Payment payment, 
-			BlockingQueue<Try<Event>> pipe) {
-		this.index = index;
-		this.digest = digest;
+	public ReplaceEvent(Payment payment, Validator validator, BlockingQueue<Try<Event>> pipe) {
 		this.payment = payment;
 		this.pipe = pipe;
+		this.validator = validator;
+		validator.constructionValidation(payment);
 	}
 
 	@Override
-	public Try<Event> update(Map<String, Payment> repository) throws InterruptedException {
-		Payment currentPayment = repository.get(payment.getIndex());
-		if (currentPayment == null) {
-			return new Try.Failure<>(new PaymentNotFoundException(payment.getIndex()));
-		} else if (!currentPayment.getDigest().equals(digest)) {
-			return new Try.Failure<>(new MismatchedDigestsException());
-		} else if (!currentPayment.getIndex().equals(index)) {
-			return new Try.Failure<>(
-					new MismatchedIdsException(currentPayment.getIndex(), index));
-		} else {
-			repository.put(payment.getIndex(), payment);
-			return new Try.Success<Event>(this);
-		}
+	public Try<Event> update(Map<String, Payment> map) throws InterruptedException {
+		return Try.apply(() -> validator.preInsertionValidation(map, payment))
+				.map(payment -> {
+					map.put(payment.getIndex(), payment);
+					return this;
+				});
 	}
 
 	@Override

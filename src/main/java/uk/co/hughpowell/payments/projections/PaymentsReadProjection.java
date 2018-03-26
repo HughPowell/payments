@@ -10,7 +10,7 @@ import com.lambdista.util.Try;
 
 import uk.co.hughpowell.payments.models.Event;
 import uk.co.hughpowell.payments.models.Payment;
-import uk.co.hughpowell.payments.models.PaymentNotFoundException;
+import uk.co.hughpowell.payments.validation.PaymentNotFoundException;
 
 public class PaymentsReadProjection implements Runnable {
 

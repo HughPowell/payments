@@ -9,20 +9,22 @@ public class CreateEvent implements Event {
 	
 	private final Payment payment;
 	private final BlockingQueue<Try<Event>> pipe;
+	private final Validator validator;
 	
-	public CreateEvent(Payment payment, BlockingQueue<Try<Event>> pipe) {
+	public CreateEvent(Payment payment, Validator validator, BlockingQueue<Try<Event>> pipe) {
 		this.payment = payment;
 		this.pipe = pipe;
+		this.validator = validator;
+		validator.constructionValidation(payment);
 	}
 
 	@Override
-	public Try<Event> update(Map<String, Payment> repository) throws InterruptedException {
-		if (repository.containsKey(payment.getIndex())) {
-			return new Try.Failure<>(new PaymentAlreadyExistsException(payment.getIndex()));
-		} else {
-			repository.put(payment.getIndex(), payment);
-			return new Try.Success<>(this);
-		}
+	public Try<Event> update(Map<String, Payment> map) throws InterruptedException {
+		return Try.apply(() -> validator.preInsertionValidation(map, payment))
+				.map(payment -> {
+					map.put(payment.getIndex(), payment);
+					return this;
+				});
 	}
 	
 	@Override

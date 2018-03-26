@@ -5,12 +5,12 @@ import java.util.concurrent.BlockingQueue;
 
 import com.lambdista.util.Try;
 
-public class RemoveEvent implements Event {
+public class DeleteEvent implements Event {
 
 	private final String paymentId;
 	private final BlockingQueue<Try<Event>> pipe;
 	
-	public RemoveEvent(String paymentId, BlockingQueue<Try<Event>> pipe) {
+	public DeleteEvent(String paymentId, BlockingQueue<Try<Event>> pipe) {
 		this.paymentId = paymentId;
 		this.pipe = pipe;
 	}
