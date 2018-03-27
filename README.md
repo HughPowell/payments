@@ -9,3 +9,4 @@
 * All of the models should almost certainly be immutable, Immutables looks promising
 * (Automate) deployments (possibly to Heroku)
 * Put wait limits on event completion
+* Create tests to hammer the async areas to make sure they are correct

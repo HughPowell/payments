@@ -16,8 +16,8 @@ public class DeleteEvent implements Event {
 	}
 	
 	@Override
-	public Try<Event> update(Map<String, Payment> repository) {
-		repository.remove(paymentId);
+	public Try<Event> update(Map<String, Payment> map) {
+		map.remove(paymentId);
 		return new Try.Success<Event>(this);
 	}
 	

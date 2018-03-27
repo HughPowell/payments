@@ -30,6 +30,10 @@ public class PaymentsRestController {
 	PaymentsRestController(PaymentsOrchestrator orchestrator) {
 		this.orchestrator = orchestrator;
 	}
+	
+	private static String createEtag(Payment payment) {
+		return "\"" + payment.getDigest() + "\"";
+	}
 
 	@RequestMapping(method = RequestMethod.POST)
 	ResponseEntity<?> createPayment(@RequestBody JsonNode payment)
@@ -40,7 +44,7 @@ public class PaymentsRestController {
 		URI uriToPayment = URI.create(linkToPayment.getHref());
 		return ResponseEntity
 				.created(uriToPayment)
-				.eTag("\"" + storedPayment.getDigest() + "\"")
+				.eTag(createEtag(storedPayment))
 				.build();
 	}
 	
@@ -49,7 +53,7 @@ public class PaymentsRestController {
 		List<PaymentResource> paymentResources = orchestrator
 				.readPayments()
 				.stream()
-				.map(storedPayment -> new PaymentResource(storedPayment.getData()))
+				.map(payment -> new PaymentResource(payment.getData()))
 				.collect(Collectors.toList());
 		return new Resources<>(paymentResources);
 	}
@@ -58,12 +62,12 @@ public class PaymentsRestController {
 	ResponseEntity<PaymentResource> readPayment(@PathVariable String paymentId) {
 		Payment payment = orchestrator.read(paymentId);
 		HttpHeaders headers = new HttpHeaders();
-		headers.setETag("\"" + payment.getDigest() + "\"");
+		headers.setETag(createEtag(payment));
 		return new ResponseEntity<PaymentResource>(new PaymentResource(payment.getData()), headers, HttpStatus.OK);
 	}
 	
-	private static String stripQuotes(String digest) {
-		return digest.substring(1, digest.length() - 1);
+	private static String etagToDigest(String etag) {
+		return etag.substring(1, etag.length() - 1);
 	}
 	
 	@RequestMapping(method = RequestMethod.PUT, value = "/{paymentId}")
@@ -71,12 +75,12 @@ public class PaymentsRestController {
 			@PathVariable String paymentId,
 			@RequestBody JsonNode payment,
 			@RequestHeader("If-Match") String digest) throws Throwable {
-		Payment storedPayment = new Payment(payment);
-		digest = stripQuotes(digest);
-		orchestrator.replace(paymentId, digest, storedPayment);
+		Payment modelPayment = new Payment(payment);
+		digest = etagToDigest(digest);
+		orchestrator.replace(paymentId, digest, modelPayment);
 		return ResponseEntity
 				.noContent()
-				.eTag("\"" + storedPayment.getDigest() + "\"")
+				.eTag(createEtag(modelPayment))
 				.build();
 	}
 	
