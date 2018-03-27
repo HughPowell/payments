@@ -33,12 +33,16 @@ public class PaymentsOrchestrator {
 		new Thread(projection).start();
 	}
 
+	private void throwOnFailure(Try<Event> result) throws Throwable {
+		result.checkedGet();
+	}
+	
 	public void create(Payment payment) throws Throwable {
 		BlockingQueue<Try<Event>> pipe =
 				new ArrayBlockingQueue<Try<Event>>(1);
 		Event update = new CreateEvent(payment, new CreationValidator(), pipe);
 		store.store(update);
-		pipe.take().checkedGet();
+		throwOnFailure(pipe.take());
 	}
 	
 	public Payment read(String indexId) {
@@ -53,7 +57,7 @@ public class PaymentsOrchestrator {
 				new ReplacementValidator(indexToBeUpdated, lastKnownDigest),
 				pipe);
 		store.store(update);
-		pipe.take().checkedGet();
+		throwOnFailure(pipe.take());
 	}
 	
 	public void delete(String indexId) throws Throwable {
@@ -61,7 +65,7 @@ public class PaymentsOrchestrator {
 				new ArrayBlockingQueue<Try<Event>>(1);
 		Event update = new DeleteEvent(indexId, pipe);
 		store.store(update);
-		pipe.take().checkedGet();
+		throwOnFailure(pipe.take());
 	}
 	
 	public Collection<Payment> readPayments() {
